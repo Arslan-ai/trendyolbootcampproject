@@ -1,0 +1,547 @@
+
+---final_case_users---
+Sipariş oluşturmuş kullanıcıların tablosudur.
+user_id -> kullanıcının id'si
+birth_date -> kullanıcının belirttiği doğum tarihi (zorunlu bir alan değil)
+gender -> kullanıcının belirttiği cinsiyet bilgisi (zorunlu bir alan değil)
+create_date -> kullanıcının kayıt olduğu tarih
+first_order_date -> kullanıcının ilk sipariş tarihi
+
+---final_case_transaction---
+Her bir siparişteki her bir ürün kalemi için bir satıra sahip olan alışveriş tablosudur.
+order_date -> Sipariş tarihi
+Platform -> alışverişin gerçekleştiği platform
+    Platform = 'Core' - Trendyol kargo ile gönderilen alışverişler
+    Platform = 'Grocery' - Trendyol yerel kuryelerle hızlı teslimat ile gönderilen alışverişler
+user_id -> siparişi veren kullanıcının id'si
+total_amount -> ürünün fiyatı
+shipment_number -> Bir sipariş içerisinde birden fazla satıcıdan satın alım olmuşsa, her bir satıcının teslimatı ayrılıyor ve teslimatlar için bir id atanıyor
+order_parent_id -> sipariş id'si
+product_content_id -> ürünün id'si
+business_unit_name -> ürünün ait olduğu kategori
+SHIPMENT_DISTRICT_ID -> siparişin teslim edileceği adrese ait bölgenin id'si
+
+
+
+
+shipment distinct group by
+
+count user id kişi sayısı
+
+count order parent id yapılan siğariş sayısı
+
+
+select SHIPMENT_DISTRICT_ID,count(user_id) as totalorder ,count(distinct user_id) as totaluser from sondenemem-342410.sondenemem.final_case_transaction
+where order_date < "2020-08-01"
+group by SHIPMENT_DISTRICT_ID
+order by totaluser  desc
+
+
+totalusera baktım çünkü aktif kullanım daha doğru olur gibi geldi.  districte özel olarak neresi olduğuna bakarsak daha doğru sonuç alabiliriz, bir işletme bölgesinde
+kişi sayısı az olmasına rağmen miktar fazla olabilir, ya da bir yerde kişi sayısı fazla olsa bile sipariş az ise bu aktif kullanıcının az olduğunu gösterebilir, market alışverişi için en çok müşteri olan bölgeyi plot olarak seçiyorum çünkü hızlı tüketim ürünleri kişi bazlı olarak tüketilir
+
+
+select * from bitirme-342410.trendyol.final_case_transaction limit 1;
+
+select * from bitirme-342410.trendyol.final_case_user limit 1;
+
+order_date -> Sipariş tarihi
+Platform -> alışverişin gerçekleştiği platform
+    Platform = 'Core' - Trendyol kargo ile gönderilen alışverişler
+    Platform = 'Grocery' - Trendyol yerel kuryelerle hızlı teslimat ile gönderilen alışverişler
+user_id -> siparişi veren kullanıcının id'si
+total_amount -> ürünün fiyatı
+shipment_number -> Bir sipariş içerisinde birden fazla satıcıdan satın alım olmuşsa, her bir satıcının teslimatı ayrılıyor ve teslimatlar için bir id atanıyor
+order_parent_id -> sipariş id'si
+product_content_id -> ürünün id'si
+business_unit_name -> ürünün ait olduğu kategori
+SHIPMENT_DISTRICT_ID -> siparişin teslim edileceği adrese ait bölgenin id'si
+
+
+
+select * from sondenemem-342410.sondenemem.final_case_users limit 1;
+
+select * from sondenemem-342410.sondenemem.final_case_transaction limit 1;
+
+select SHIPMENT_DISTRICT_ID,count(user_id) as totalorder ,count(distinct user_id) as totaluser,count(user_id)/count(distinct user_id) as orderperuser from sondenemem-342410.sondenemem.final_case_transaction
+where order_date < "2020-08-01"
+group by SHIPMENT_DISTRICT_ID
+order by orderperuser desc
+
+totalusera baktım çünkü aktif kullanım daha doğru olur gibi geldi.  districte özel olarak neresi olduğuna bakarsak daha doğru sonuç alabiliriz, bir işletme bölgesinde
+kişi sayısı az olmasına rağmen miktar fazla olabilir, ya da bir yerde kişi sayısı fazla olsa bile sipariş az ise bu aktif kullanıcının az olduğunu gösterebilir, market alışverişi için en çok müşteri olan bölgeyi plot olarak seçiyorum çünkü hızlı tüketim ürünleri kişi bazlı olarak tüketilir.oransal olarak
+
+SHIPMENT_DISTRICT_ID: 37 plot  bölgem dedim ancak 53 numara 50k orderla yerini aldı(25 birim per user)
+
+
+
+
+
+Q3. Tarih 1 Temmuz 2021, Trendyol Go 1 yılı geride bıraktı. 2.000 yeni kullanıcı edinme hedefin için 50.000 TL bütçen var. Kullanıcı başına 25 TL'lik kampanya yapmayı planlıyorsun.
+Geçmiş kampanya verileri kampanya kullanım oranının %10 olduğunu gösteriyor. Trendyol Core müşterilerinden hangilerini hedeflerdin?
+(Optional)
+
+
+import seaborn as sns
+import pandas as pd
+import numpy as np
+import pytz
+import datetime as dt
+import pandas as pd
+from datetime import datetime, timezone
+import time
+from datetime import date
+import re
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+pd.set_option('display.float_format', lambda x: '%.5f' % x)
+pd.set_option('display.width', 1000)
+
+
+
+
+df = pd.read_csv("Temmmmuz.csv")
+
+dfq2 = df.copy()
+df["orderdate"].head()
+#df['orderdate'] = df['orderdate'].dt.date
+
+df['orderdate']= pd.to_datetime(df['orderdate'])
+#df['orderdate'] = df['orderdate'].apply(lambda x: x.strftime('%Y-%m-%d'))
+
+df.info()
+df.head()
+today_date = df.orderdate.max()
+df.head()
+rfm = df.groupby('user_id').agg({'orderdate': [lambda orderdate: (orderdate.max() - orderdate.min()),
+                                                         lambda orderdate: (today_date - orderdate.min())],
+                                         'order_parent_id': lambda num: num.nunique(),
+                                         'total_amount': lambda total_amount: total_amount.sum()})
+
+rfm.head()
+rfm.columns = ['recency', 'T', 'frequency', 'monetary']
+rfm.head()
+#                                                     recency        T  frequency   monetary
+# user_id
+# 0001e5e0d46de05ca842d9cb9af49aae35704bea9f540fe... 186 days 230 days          7 1561.34680
+# 0001f65b55c5244892d6f46109a660f7d8f734e163334f5...   0 days  61 days          1   84.12320
+# 0003005c8e94cc6deea0ab3a5df601193e3459e44a721f0... 269 days 272 days         12 2971.69080
+# 000308f3eac487921567952234806e6e61fa2ae14519b93...  80 days 289 days          5 2072.17480
+# 0005e9a7fd5f0542164855efb06147abcc823bb16e8f285...   0 days 254 days          1  127.20000
+rfm = rfm[(rfm["monetary"] > 0)]
+
+
+rfm.info()
+rfm["recency"] = datetime.strftime(rfm["recency"],'%d')
+#rfm["receny"].split(r'\n(?=\d{4})', log)
+
+
+#rfm["newreceny"] = re.search(r'\d+', rfm["receny"])
+
+#rfm["New_recency"] = datetime.datetime.strptime(rfm["newreceny"].group(), %d').date()
+
+rfm.head()
+rfm["Recency_score"].astype(str)
+rfm['new_recency'] = rfm['recency'].str.extract(r'\d+)',expand=True)
+# ValueError: Bin edges must be unique: array([0.00000e+00, 0.00000e+00, 1.81440e+15, 1.64160e+16, 3.61152e+16,
+#        6.60096e+16]).
+# You can drop duplicate edges by setting the 'duplicates' kwarg
+rfm["Recency_score"] = pd.qcut(rfm["recency"].rank(method='first'), 5, labels=[5,4,3,2,1])
+
+rfm["Frequency_score"] = pd.qcut(rfm["frequency"].rank(method="first"),5,labels =[1,2,3,4,5])
+
+rfm["Monetary_scroe"] = pd.qcut(rfm["monetary"],5,labels = [1,2,3,4,5])
+
+rfm["RFM_SCORE"] = (rfm["Recency_score"].astype(str) + rfm["Frequency_score"].astype(str))
+
+
+rfm.to_csv("new_customersrfm.csv")
+rfm = pd.read_csv("new_customersrfm.csv")
+segment_map = { r'[1-2][1-2]': 'hibernating',
+    r'[1-2][3-4]': 'at_Risk',
+    r'[1-2]5': 'cant_loose',
+    r'3[1-2]': 'about_to_sleep',
+    r'33': 'need_attention',
+    r'[3-4][4-5]': 'loyal_customers',
+    r'41': 'promising',
+    r'51': 'new_customers',
+    r'[4-5][2-3]': 'potential_loyalists',
+    r'5[4-5]': 'champions'}
+
+
+rfm['segment'] = rfm['RFM_SCORE'].replace(segment_map, regex=True)
+
+rfm[rfm["segment"] == "champions"].head(2)
+
+#                                                   recency        T  frequency  monetary Recency_score Frequency_score Monetary_scroe RFM_SCORE    segment
+# user_id
+# 1095b1c6a62c4343aaff3f7dd84e9db7b3330be92a97b14...  0 days 421 days          6 846.85520             5               4              3        54  champions
+# 67d6d516514dedc764b17d69f40a69cd7626dff52feea56...  0 days 427 days          6  23.14200             5               4              1        54  champions
+
+
+
+# Buradan kupon dağıtacağımız müşterileri seçebiliriz, en sadık müşterilerimize yatırım yapmamızın daha fazla getirisi olacağını düşündüm çünkü mevcut müşteri bağını
+# arttırmanın yeni müşteri kazanmaktan 4 kat daha az maliyetli olduğunu öğrendim, bu şekilde şirketimizin ileri iştiraklerine aslında potansiyel sadık kullanıcı da
+# katmış olabiliriz.
+
+
+rfm["Recency_score"].astype(int)
+rfm["Frequency_score"].astype(int)
+sns.regplot(x=rfm['segment'], y=rfm["user_id"])
+rfm.columns
+
+
+plt.pie(rfm.segment.value_counts(),
+        labels=rfm.segment.value_counts().index,
+        autopct='%.0f%%',radius = 1.3)
+
+plt.show()
+
+
+
+Q4. Bu data ile kendin bir business question üretip analiz etmeni istesek hangi soruya nasıl bir cevap bulurdun?
+
+# İlerlediğimiz veriden ilgisini kaybedecek olan (churn olacak) müşterileri tahminleyebileceğimiz bir model oluşturabilir ya da bir müşterinin
+# yapmış olduğu satın almalara göre yaşam boyu kattığı değer tahmin edilerek müşteri bazında kampanyalar, uygulamalar yönlendirilebilir.
+# bunun için marketingte bunun nasıl hesaplandığını öğrenip makine öğrenmesi modeli tasarladım,
+# tasarlamış olduğum model elimizdeki verileri kullanarak bunu oluşturuyor böylelikle bizi terk etmeye yakın,
+# riskli veya loyaltysini geliştirmeyi planladığımız müşterileri seçip onlara
+
+# Not: yazmış olduğun hesaplamalar mutlak değil, hesaplama şekilleri değişebilir.(Repeat rate,churn rate fomulleri gibi)
+# Gerekli işlemler yapıldığında her bir müşteri için hesaplanacak olan CLTV değerine göre bir sıralama yapıldığında ve
+# CLTV  değerine göre belirli noktalardan bölme işlemi yapılarak gruplar oluşturulduğunda müşterilerimizi segmentlere ayırmış
+# olacağız.Bu formuldeki ana kaygımız satış yapmak, pazarlama olduğu için segmentasyonu bu şekilde kullanacağız.
+# Örnek çocuğua balon, yaşlıya çay, gence kahve teklif etmek gibi.Burada geleceği, potansiyel geliri 3. soruda ise  satış
+# frekansına odaklandık.
+# Dikkat: Total frekansı eziyor, aynı fiyatı kazandırırsa işlem adedinin önemi yok, churn rate tüm kitleden gelir
+# bounce drop churn ratelerini bilsek kişisel churn yapabilirdik.
+# Çıktımız nedir ? Önümüzdeki 6 ay içerisinde ilgilenilecek müşteriler kimlerdir?
+#RFM farkı nedir? Rfm kazanç CLTV ise potansiyel odaklı
+
+# 1. Veri hazırlanması(hazırlandı)
+# 2. Average Order Value (average_order_value = total_price / total_transaction)
+# 3. Purchase Frequency (total_transaction / total_number_of_customers)
+# 4. Repeat Rate & Churn Rate (birden fazla alışveriş yapan müşteri sayısı / tüm müşteriler)
+# 5. Profit Margin (profit_margin =  total_price * 0.10)
+# 6. Customer Value (customer_value = average_order_value * purchase_frequency)
+# 7. Customer Lifetime Value (CLTV = (customer_value / churn_rate) x profit_margin)
+# 8. Segmentlerin Oluşturulması
+
+
+# cltv= müşterilerle etkileşim yapılacak süre boyunca müşterinin yaratabileceği katma değere ilişkin
+# gösteren bir göstergedir
+
+#bg/nbd satın alma sayısının olasılıksal versiyonu
+# gamma gamma bıraktığı paranın olasılıksal modeli
+
+cltv_c = rfm.copy()
+
+df.head()
+##################################################
+# 2. Average Order Value (average_order_value = total_price / total_transaction)
+##################################################
+
+cltv_c['avg_order_value'] = cltv_c['total_amount'] / cltv_c['totalorder']
+
+##################################################
+# 3. Purchase Frequency (total_transaction / total_number_of_customers)
+##################################################
+
+cltv_c["purchase_frequency"] = cltv_c['totalorder'] / cltv_c.shape[0]
+
+##################################################
+# 4. Repeat Rate & Churn Rate (birden fazla alışveriş yapan müşteri sayısı / tüm müşteriler)
+##################################################
+
+repeat_rate = cltv_c[cltv_c.total_transaction > 1].shape[0] / cltv_c.shape[0]
+# Bir günde 2 kere mi? 3 ayda 2 mi? burası tartışılır ve ona göre bir formul yazılabilir
+churn_rate = 1 - repeat_rate
+
+##################################################
+# 5. Profit Margin (profit_margin =  total_price * 0.10)
+##################################################
+
+cltv_c['profit_margin'] = cltv_c['total_amount'] * 0.10
+# Bu da daha kapsamlı bir formulden sonra düzenlenebilir
+
+
+##################################################
+# 6. Customer Value (customer_value = average_order_value * purchase_frequency)
+##################################################
+
+# Customer Value
+cltv_c['customer_value'] = (cltv_c['avg_order_value'] * cltv_c["purchase_frequency"]) / churn_rate
+
+##################################################
+# 7. Customer Lifetime Value (CLTV = (customer_value / churn_rate) x profit_margin)
+##################################################
+
+cltv_c['cltv'] = cltv_c['customer_value'] * cltv_c['profit_margin']
+
+
+scaler = MinMaxScaler(feature_range=(0, 1))
+scaler.fit(cltv_c[["cltv"]])
+
+#fit = matematiksel ya da bir görevi ilgili veri yapısına uyarlar
+
+cltv_c["scaled_cltv"] = scaler.transform(cltv_c[["cltv"]])
+
+# değiştirilen biçimdeki yapıyı transfer eder, kalıcı olarak dönüştürür
+
+
+#standartlaştırma sebebimiz değişkenlerin değer aralıkları farklı olduğundan birbirlerini ezmesini önlemek. Cltv'de büyüklük küçüklük algımız
+#yok çünkü çok yüksek alçak değerler çıkacaktır
+
+
+cltv_c.sort_values(by="scaled_cltv", ascending=False).head()
+
+
+# Burada en yüksek skordaki müşteriyi göreceğiz (azalarak sıralanıyor)
+
+# cltv işlem sıklığı ve ortalama kazançın bölümüdür, düzeltme ve genelleştirme kaygısı ile churn rate ve profit marjin ekledik.
+
+
+# Buradan sonra azalana göre sıralayarak ilk %10'u gibi bir şey yapabiliriz, ama ben burada segmentlere ayırmayı daha doğru buldum
+
+
+
+##################################################
+# 8. Segmentlerin Oluşturulması
+##################################################
+
+
+# Müşterileri 4 gruba ayır
+cltv_c["segment"] = pd.qcut(cltv_c["scaled_cltv"], 4, labels=["D", "C", "B", "A"])
+cltv_c.head()
+
+# Sırala
+cltv_c[["total_transaction", "total_unit", "total_price", "cltv", "scaled_cltv"]].sort_values(by="scaled_cltv",
+                                                                                              ascending=False).head()
+
+# Segmentlerin betimlenmesi, biz neye bakıyoruz diye bakıyoruz. Temel bileşen analizleri çok şeyi açıklar
+
+cltv_c.groupby("segment")[["total_transaction", "total_unit", "total_price", "cltv", "scaled_cltv"]].agg(
+    {"count", "mean", "sum"})
+
+# Dikkat bunlar standartlaştırılmış değerlerdir
+
+Zaman projeksiyonlu olasılıksal cltv tahmini yapabiliriz
+
+
+purchase frequency * average order value = customer value
+
+# Satın alma alışkanlıklarını aynı anda göz önünde bulundurarak modelleyecek ve
+# bütün kitleninbeklenen satın alma sayısını ve beklenen average order valuesını, profitini
+# hesaplayacak bir şey oluşturucam
+eski hali cltv = ( customer value / churn rate ) * profit margin
+cltv = expected number of transaction * expected average profit
+yani
+
+cltv = bg/nbd model * gamma gamma submodel olarak ayıracağız
+
+Bu iki modelden bg/nbd de dağılımı hesaplanacak, müşterilerimizin satın alma örtünsünün
+(haftasonu geliyor, öğle arasında geliyor gibi) hesaplayıp genel hesapladan sonra
+örüntüyü hesaplayıp, önümüze gelen müşterinin kitlenin davranış örüntüsü altında ne kadar,
+nasıl harcama yapacağını modelimizle göstereceğiz. Ayşe hanımın özellikleri girilince
+Kitleye bakıp ayşe hanımın özelliklerine göre Ayşe hanımın beklenen ortalama karlılığını
+bulacağız
+
+BG/NBD modeli = Satın alma sayısını tahmin edeceğiz
+
+Bunu transaction process ( buy ) + dropout process (till you die) olarak modelleyeceğiz
+
+# transaction process
+# Alive olduğu sürece, belirli bir zaman periyodunda gerçekleştiricek işlem yapacaktır
+# bu yaptığı işlemler geçmişte yaptığı satın alma hareketine göre davranmaya devam edecektir
+#
+# Dropout ptyprocess
+# Her bir müşterinin p olasılığı ile dropout olma patterni de vardır.
+# bir müşteri alışveriş yaptıktan sonra belirli bir olasılıkla dropout olur
+# dropout rateler her bir müşteriye göre değişir, tıpkı 1. bölüm gibi
+
+
+# Örüntülere dikkatle bakılmalı, churn tanımı nasıl olmalı bilmeliyiz, churn müşteri
+# özelinde olmalı bence çünkü müşteri özelinde patternler var
+
+# Gamma gamma submodel
+# Bir müşterinin işlem başına ortalama ne kadar kar getirebileceğini tahmin etmek için
+#kullanılır
+
+# bir müşterinin işlemlerinin parasal değeri(monetary columnu yani) transaction valueları ortalaması
+# etrafında rastgele dağılır
+
+# bi gün 10 bi gün 20 bi gün 10 ( ben hep ellilik alıyorum gibi )
+
+# bu aslında satın alma frekansının olasılıksal modeli
+
+
+# monetary değerinin satın alma başına ortalama kazanç olarak ifade edilmesi
+cltv_df["monetary"] = cltv_df["monetary"] / cltv_df["frequency"]
+
+cltv_df = cltv_df[(cltv_df["frequency"] > 1)]
+
+
+# monetary sıfırdan büyük olanların seçilmesi
+cltv_df = cltv_df[cltv_df["monetary"] > 0]
+cltv_df.head()
+
+# BGNBD için recency ve T'nin haftalık cinsten ifade edilmesi
+cltv_df["recency"] = cltv_df["recency"] / 7
+cltv_df["T"] = cltv_df["T"] / 7
+
+# frequency'nin 1'den büyük olması gerekmektedir.
+cltv_df = cltv_df[(cltv_df['frequency'] > 1)]
+
+
+##############################################################
+# 2. BG-NBD Modelinin Kurulması
+##############################################################
+
+bgf = BetaGeoFitter(penalizer_coef=0.001)
+
+bgf.fit(cltv_df['frequency'],
+        cltv_df['recency'],
+        cltv_df['T'])
+
+
+################################################################
+# 1 hafta içinde en çok satın alma beklediğimiz 10 müşteri kimdir?
+################################################################
+
+bgf.conditional_expected_number_of_purchases_up_to_time(1,
+                                                        cltv_df['frequency'],
+                                                        cltv_df['recency'],
+                                                        cltv_df['T']).sort_values(ascending=False).head(10)
+
+#yukarıdaki yerine predicte kullanabiliriz bunu kullanacağım artık
+cltv_df["expected_purc_1_week"] = bgf.predict(1,
+                                              cltv_df['frequency'],
+                                              cltv_df['recency'],
+                                              cltv_df['T'])
+
+cltv_df.head()
+
+################################################################
+# 1 ay içinde en çok satın alma beklediğimiz 10 müşteri kimdir?
+################################################################
+
+
+bgf.predict(4,
+            cltv_df['frequency'],
+            cltv_df['recency'],
+            cltv_df['T']).sort_values(ascending=False).head(10)
+
+cltv_df["expected_purc_1_month"] = bgf.predict(4,
+                                               cltv_df['frequency'],
+                                               cltv_df['recency'],
+                                               cltv_df['T'])
+
+cltv_df.sort_values("expected_purc_1_month", ascending=False).head(20)
+
+################################################################
+# 1 Ay içinde tüm Şirketin Beklenen Satış Sayısı Nedir?
+################################################################
+
+bgf.predict(4,
+            cltv_df['frequency'],
+            cltv_df['recency'],
+            cltv_df['T']).sum()
+
+################################################################
+# 3 Ayda Tüm Şirketin Beklenen Satış Sayısı Nedir?
+################################################################
+
+
+bgf.predict(4 * 3,
+            cltv_df['frequency'],
+            cltv_df['recency'],
+            cltv_df['T']).sum()
+
+################################################################
+# Tahmin Sonuçlarının Değerlendirilmesi
+################################################################
+
+plot_period_transactions(bgf)
+plt.show()
+
+##############################################################
+# 3. GAMMA-GAMMA Modelinin Kurulması
+##############################################################
+
+ggf = GammaGammaFitter(penalizer_coef=0.01)
+ggf.fit(cltv_df['frequency'], cltv_df['monetary'])
+
+ggf.conditional_expected_average_profit(cltv_df['frequency'],
+                                        cltv_df['monetary']).head(10)
+
+ggf.conditional_expected_average_profit(cltv_df['frequency'],
+                                        cltv_df['monetary']).sort_values(ascending=False).head(10)
+
+cltv_df["expected_average_profit"] = ggf.conditional_expected_average_profit(cltv_df['frequency'],
+                                                                             cltv_df['monetary'])
+
+cltv_df.sort_values("expected_average_profit", ascending=False).head(20)
+
+##############################################################
+# 4. BG-NBD ve GG modeli ile CLTV'nin hesaplanması.
+##############################################################
+
+
+cltv = ggf.customer_lifetime_value(bgf,
+                                   cltv_df['frequency'],
+                                   cltv_df['recency'],
+                                   cltv_df['T'],
+                                   cltv_df['monetary'],
+                                   time=3,  # 3 aylık
+                                   freq="W",  # T'nin frekans bilgisi.
+                                   discount_rate=0.01)
+
+cltv.head()
+
+cltv.shape
+cltv = cltv.reset_index()
+cltv.sort_values(by="clv", ascending=False).head(50)
+
+cltv_final = cltv_df.merge(cltv, on="Customer ID", how="left")
+cltv_final.sort_values(by="clv", ascending=False).head(10)
+
+# CLTV'nin Standartlaştırılması
+scaler = MinMaxScaler(feature_range=(0, 1))
+scaler.fit(cltv_final[["clv"]])
+cltv_final["scaled_clv"] = scaler.transform(cltv_final[["clv"]])
+
+# Sıralayalım:
+cltv_final.sort_values(by="scaled_clv", ascending=False).head()
+
+##############################################################
+# 5. CLTV'ye Göre Segmentlerin Oluşturulması
+##############################################################
+
+# Müşterileri 4 gruba ayıralım:
+cltv_final["segment"] = pd.qcut(cltv_final["scaled_clv"], 4, labels=["D", "C", "B", "A"])
+cltv_final.head()
+
+cltv_final.sort_values(by="scaled_clv", ascending=False).head(50)
+
+# Segmentleri betimleyelim:
+cltv_final.groupby("segment").agg(
+    {"count", "mean", "sum"})
+
+# Bundan sonra ne olur?
+# Holdout yöntemi ile zamana göre benchmark yapılması gerekir.
+cltv_final.head()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
